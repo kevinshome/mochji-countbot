@@ -7,6 +7,7 @@ import dotenv
 
 dotenv.load_dotenv()
 
+DEBUG_MODE = True
 client = discord.Client(intents=discord.Intents.all())
 
 global last_number
@@ -31,7 +32,8 @@ def eval_(node):
 
     operators = {ast.Add: op.add, ast.Sub: op.sub, ast.Mult: op.mul,
                  ast.Div: op.truediv, ast.Pow: op.pow, ast.BitXor: op.xor,
-                 ast.USub: op.neg}
+                 ast.USub: op.neg, ast.BitOr: op.or_, ast.BitAnd: op.and_,
+                 ast.LShift: op.lshift, ast.RShift: op.rshift}
 
     match node:
         case ast.Constant(value) if isinstance(value, int):
@@ -67,7 +69,7 @@ async def on_message(msg):
     global last_guesser_id
     global baka_role
 
-    if msg.author.id == last_guesser_id:
+    if (msg.author.id == last_guesser_id) and not DEBUG_MODE:
         return
 
     if msg.channel.id != int(os.environ["COUNTING_CHANNEL_ID"]):
