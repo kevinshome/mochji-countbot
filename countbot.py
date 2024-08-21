@@ -7,7 +7,7 @@ import dotenv
 
 dotenv.load_dotenv()
 
-DEBUG_MODE = True
+DEBUG_MODE = False
 client = discord.Client(intents=discord.Intents.all())
 
 global last_number
