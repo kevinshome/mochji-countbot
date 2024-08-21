@@ -7,7 +7,6 @@ import dotenv
 
 dotenv.load_dotenv()
 
-DEBUG_MODE = False
 client = discord.Client(intents=discord.Intents.all())
 
 global last_number
@@ -69,7 +68,7 @@ async def on_message(msg):
     global last_guesser_id
     global baka_role
 
-    if (msg.author.id == last_guesser_id) and not DEBUG_MODE:
+    if (msg.author.id == last_guesser_id) and os.environ.get("DEBUG_MODE") is None:
         return
 
     if msg.channel.id != int(os.environ["COUNTING_CHANNEL_ID"]):
@@ -81,7 +80,7 @@ async def on_message(msg):
 
     potential_number = split_msg[0]
 
-    if potential_number[0] not in string.digits:
+    if potential_number[0] not in string.digits and not potential_number[0].startswith("0x"):
         return
 
     try:
