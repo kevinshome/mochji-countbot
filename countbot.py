@@ -7,7 +7,8 @@ import dotenv
 
 dotenv.load_dotenv()
 
-client = discord.Client(intents=discord.Intents.all())
+#client = discord.Client(intents=discord.Intents.all())
+client = discord.Bot(intents=discord.Intents.all())
 
 global last_number
 global last_guesser_id
@@ -49,6 +50,8 @@ def eval_(node):
 async def on_ready():
     global guild
     global baka_role
+
+    await client.sync_commands()
     guild = await client.fetch_guild(int(os.environ["GUILD_ID"]))
     guild_roles = await guild.fetch_roles()
     for role in guild_roles:
@@ -63,10 +66,13 @@ async def on_ready():
 
 
 @client.event
-async def on_message(msg):
+async def on_message(msg: discord.Message):
     global last_number
     global last_guesser_id
     global baka_role
+
+    if msg.author.bot:
+        return
 
     if (msg.author.id == last_guesser_id) and os.environ.get("DEBUG_MODE") is None:
         return
@@ -111,5 +117,35 @@ async def on_message(msg):
                 )
     return
 
+@client.slash_command()
+async def help(ctx: discord.ApplicationContext):
+    emb = discord.Embed(
+        title="Counting bot help",
+        description="The counting bot will only accept messages under the following circumstances:\n"
+        "- The message has no spaces\n"
+        "- The message only contains numbers (decimal (2) or hexadecimal (0x02)) and math operators\n"
+        "- Math operations will ONLY be counted if they contain no spaces\n"
+        "\n"
+        "The counting bot accepts the following math operators:\n"
+        "- ( + ) Addition\n"
+        "- ( - ) Subtraction\n"
+        "- ( * ) Multiplication\n"
+        "- ( / ) Division\n"
+        "- ( ** ) Exponent/Power\n"
+        "\n"
+        "The counting bot also accepts the following bitwise operators:\n"
+        "- ( | ) OR\n"
+        "- ( & ) AND\n"
+        "- ( ^ ) XOR\n"
+        "- ( >> ) Right Shift\n"
+        "- ( << ) Left Shift\n"
+    )
+
+    await ctx.respond(
+        "",
+        embed=emb,
+        ephemeral=True
+    )
+    return
 
 client.run(os.environ["BOT_TOKEN"])
