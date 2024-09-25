@@ -13,7 +13,7 @@ client = discord.Bot(intents=discord.Intents.all())
 global last_number
 global last_guesser_id
 try:
-    with open("info.json", 'r') as f:
+    with open("./perpetual/info.json", 'r') as f:
         data = json.load(f)
         last_number = data.get("last_number", 0)
         last_guesser_id = data.get("last_guesser_id", 0)
@@ -110,7 +110,7 @@ async def on_message(msg: discord.Message):
         last_number += 1
         last_guesser_id = msg.author.id
 
-    with open("info.json", "w") as f:
+    with open("./perpetual/info.json", "w") as f:
         json.dump(
                 {"last_number": last_number,
                  "last_guesser_id": last_guesser_id}, f

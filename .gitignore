@@ -4,4 +4,4 @@ __pycache__
 .venv
 requirements.txt
 startscript.sh
-info.json
+perpetual/info.json
