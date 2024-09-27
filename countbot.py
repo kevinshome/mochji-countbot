@@ -9,12 +9,18 @@ dotenv.load_dotenv()
 
 class BotInfo():
     def __init__(self):
+        self.lock = False
         self.last_number = 0
         self.last_guesser_id = 0
+        self.highest_number = 0
+        self.last_round_info = {
+            "last_number": 0,
+            "last_guesser_id": 0,
+        }
         self.token_info = {
             "token_count": 0,
             "next_token_progress": 0.0,
-            "cooldown_end": None,
+            "cooldown_end": 0,
         }
 
         try:
@@ -22,6 +28,8 @@ class BotInfo():
                 data = json.load(f)
                 self.last_number = data["last_number"]
                 self.last_guesser_id = data["last_guesser_id"]
+                self.last_round_info = data["last_round_info"]
+                self.highest_number = data["highest_number"]
                 self.token_info = data["token_info"]
         except:
             pass
@@ -30,6 +38,7 @@ class BotInfo():
         data = {
             "last_number": self.last_number,
             "last_guesser_id": self.last_guesser_id,
+            "last_round_info": self.last_round_info,
             "token_info": self.token_info,
         }
 
@@ -74,7 +83,6 @@ async def on_ready():
     global guild
     global baka_role
 
-    await client.sync_commands()
     guild = await client.fetch_guild(int(os.environ["GUILD_ID"]))
     guild_roles = await guild.fetch_roles()
     for role in guild_roles:
@@ -86,6 +94,9 @@ async def on_ready():
     print(f"Logged in as {client.user}")
     print(f"baka_role={baka_role}\nguild={guild}")
     print(f"channel_id={os.environ['COUNTING_CHANNEL_ID']}")
+    print("Syncing commands...")
+    await client.sync_commands(force=True)
+    print("Done!")
 
 
 @client.event
@@ -116,6 +127,13 @@ async def on_message(msg: discord.Message):
     except SyntaxError:
         return
 
+    #wait to obtain lock, if nec
+    while 1:
+        if client.info.lock:
+            continue
+        break
+
+    client.info.lock = True
     if potential_number != client.info.last_number+1:
         await msg.add_reaction("❌")
         await msg.reply(
@@ -124,15 +142,75 @@ async def on_message(msg: discord.Message):
                 f"{msg.author.mention} is now a {baka_role.mention}"
         )
         await msg.author.add_roles(baka_role)
+        client.info.last_round_info = {
+            "last_number": client.info.last_number,
+            "last_guesser_id": client.info.last_guesser_id,
+        }
+        client.info.token_info["next_token_progress"] = 0.0
         client.info.last_number = 0
         client.info.last_guesser_id = 0
     else:
         await msg.add_reaction("✅")
         client.info.last_number += 1
+        if client.info.last_number > client.info.highest_number:
+            client.info.highest_number += 1
         client.info.last_guesser_id = msg.author.id
+        if client.info.token_info["token_count"] < 2:
+            client.info.token_info["next_token_progress"] += 0.02
+            client.info.token_info["next_token_progress"] = round(client.info.token_info["next_token_progress"], 2)
+            if client.info.token_info["next_token_progress"] == 1.0:
+                client.info.token_info["next_token_progress"] = 0.0
+                client.info.token_info["token_count"] += 1
 
     client.info.save_to_disk()
+    client.info.lock = False
     return
+
+@client.slash_command()
+async def revive(ctx: discord.ApplicationContext):
+    if client.info.last_number != 0:
+        await ctx.respond("You are in the middle of an active counting session!", ephemeral=True)
+        return
+    if client.info.last_round_info["last_number"] < client.info.token_info["cooldown_end"]:
+        await ctx.respond("You failed the count before the cooldown ended! ):", ephemeral=True)
+        return
+    if client.info.token_info["token_count"] == 0:
+        await ctx.respond("You don't have any revive tokens! ):", ephemeral=True)
+        return
+    
+    client.info.last_number = client.info.last_round_info["last_number"]
+    client.info.last_guesser_id = client.info.last_round_info["last_guesser_id"]
+    client.info.last_round_info = {
+        "last_number": 0,
+        "last_guesser_id": 0
+    }
+    client.info.token_info["token_count"] -= 1
+    client.info.token_info["cooldown_end"] = client.info.last_number + 50
+    client.info.save_to_disk()
+
+    await ctx.respond("You have successfully used a revive token!\n\n"
+             f"You can not use another one until you get to the number {client.info.token_info['cooldown_end']}\n"
+             f"Resume counting from {client.info.last_number}!"
+             )
+
+    return
+
+@client.slash_command()
+async def info(ctx: discord.ApplicationContext):
+    emb = discord.Embed(
+        title="Current session information",
+        description=f"Current number: {client.info.last_number}\n"
+        f"Revive tokens remaining: {client.info.token_info['token_count']}\n"
+        f"Progress towards next token: {client.info.token_info['next_token_progress']:.0%} {'(Max tokens)' if client.info.token_info['token_count'] == 2 else ''}\n"
+        f"Highest number: {client.info.highest_number}\n"
+    )
+    await ctx.respond(
+        "",
+        embed=emb,
+        ephemeral=True
+    )
+    return
+
 
 @client.slash_command()
 async def help(ctx: discord.ApplicationContext):
