@@ -7,19 +7,42 @@ import dotenv
 
 dotenv.load_dotenv()
 
-#client = discord.Client(intents=discord.Intents.all())
-client = discord.Bot(intents=discord.Intents.all())
+class BotInfo():
+    def __init__(self):
+        self.last_number = 0
+        self.last_guesser_id = 0
+        self.token_info = {
+            "token_count": 0,
+            "next_token_progress": 0.0,
+            "cooldown_end": None,
+        }
 
-global last_number
-global last_guesser_id
-try:
-    with open("./perpetual/info.json", 'r') as f:
-        data = json.load(f)
-        last_number = data.get("last_number", 0)
-        last_guesser_id = data.get("last_guesser_id", 0)
-except FileNotFoundError:
-    last_number = 0
-    last_guesser_id = 0
+        try:
+            with open("./perpetual/info.json", 'r') as f:
+                data = json.load(f)
+                self.last_number = data["last_number"]
+                self.last_guesser_id = data["last_guesser_id"]
+                self.token_info = data["token_info"]
+        except:
+            pass
+
+    def save_to_disk(self):
+        data = {
+            "last_number": self.last_number,
+            "last_guesser_id": self.last_guesser_id,
+            "token_info": self.token_info,
+        }
+
+        with open("./perpetual/info.json", 'w') as f:
+            json.dump(data, f)
+
+class CountBot(discord.Bot):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.info = BotInfo()
+
+client = CountBot(intents=discord.Intents.all())
+
 global guild
 global baka_role
 
@@ -67,14 +90,12 @@ async def on_ready():
 
 @client.event
 async def on_message(msg: discord.Message):
-    global last_number
-    global last_guesser_id
     global baka_role
 
     if msg.author.bot:
         return
 
-    if (msg.author.id == last_guesser_id) and os.environ.get("DEBUG_MODE") is None:
+    if (msg.author.id == client.info.last_guesser_id) and os.environ.get("DEBUG_MODE") is None:
         return
 
     if msg.channel.id != int(os.environ["COUNTING_CHANNEL_ID"]):
@@ -95,26 +116,22 @@ async def on_message(msg: discord.Message):
     except SyntaxError:
         return
 
-    if potential_number != last_number+1:
+    if potential_number != client.info.last_number+1:
         await msg.add_reaction("❌")
         await msg.reply(
-                f"Le Epic Fail! Should've been {last_number+1}, "
+                f"Le Epic Fail! Should've been {client.info.last_number+1}, "
                 f"not {potential_number}!\n\n"
                 f"{msg.author.mention} is now a {baka_role.mention}"
         )
         await msg.author.add_roles(baka_role)
-        last_number = 0
-        last_guesser_id = 0
+        client.info.last_number = 0
+        client.info.last_guesser_id = 0
     else:
         await msg.add_reaction("✅")
-        last_number += 1
-        last_guesser_id = msg.author.id
+        client.info.last_number += 1
+        client.info.last_guesser_id = msg.author.id
 
-    with open("./perpetual/info.json", "w") as f:
-        json.dump(
-                {"last_number": last_number,
-                 "last_guesser_id": last_guesser_id}, f
-                )
+    client.info.save_to_disk()
     return
 
 @client.slash_command()
