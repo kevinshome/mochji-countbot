@@ -37,6 +37,7 @@ class BotInfo():
     def save_to_disk(self):
         data = {
             "last_number": self.last_number,
+            "highest_number": self.highest_number,
             "last_guesser_id": self.last_guesser_id,
             "last_round_info": self.last_round_info,
             "token_info": self.token_info,
