@@ -154,7 +154,7 @@ async def on_message(msg: discord.Message):
         await msg.add_reaction("✅")
         client.info.last_number += 1
         if client.info.last_number > client.info.highest_number:
-            client.info.highest_number += 1
+            client.info.highest_number = client.info.last_number+1
         client.info.last_guesser_id = msg.author.id
         if client.info.token_info["token_count"] < 2:
             client.info.token_info["next_token_progress"] += 0.02
