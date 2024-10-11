@@ -140,7 +140,8 @@ async def on_message(msg: discord.Message):
         await msg.reply(
                 f"Le Epic Fail! Should've been {client.info.last_number+1}, "
                 f"not {potential_number}!\n\n"
-                f"{msg.author.mention} is now a {baka_role.mention}"
+                f"{msg.author.mention} is now a {baka_role.mention}\n\n"
+                f"(You have {client.info.token_info['token_count']} revive tokens available)"
         )
         await msg.author.add_roles(baka_role)
         client.info.last_round_info = {
