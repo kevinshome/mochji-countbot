@@ -119,7 +119,7 @@ async def on_message(msg: discord.Message):
     if len(split_msg) > 1:
         return
 
-    sys.stderr.write(f"[{time.time().__floor__()}]: parsing message with content: '{msg.content}', split_rep->'{split_msg}'")
+    sys.stdout.write(f"[{time.time().__floor__()}]: parsing message with content: '{msg.content}', split_rep->'{split_msg}'")
 
     potential_number = split_msg[0]
 
@@ -132,7 +132,7 @@ async def on_message(msg: discord.Message):
     except SyntaxError:
         return
 
-    sys.stderr.write(f"[{time.time().__floor__()}]: submission '{potential_number} ({int(potential_number)})' sent by user '{msg.author.name}'")
+    sys.stdout.write(f"[{time.time().__floor__()}]: submission '{potential_number} ({int(potential_number)})' sent by user '{msg.author.name}'")
 
     #wait to obtain lock, if nec
     while 1:
@@ -142,7 +142,7 @@ async def on_message(msg: discord.Message):
 
     client.info.lock = True
     if potential_number != client.info.last_number+1:
-        sys.stderr.write(f"[{time.time().__floor__()}]: submission '{potential_number} ({int(potential_number)})' failed")
+        sys.stdout.write(f"[{time.time().__floor__()}]: submission '{potential_number} ({int(potential_number)})' failed")
         await msg.add_reaction("❌")
         await msg.reply(
                 f"Le Epic Fail! Should've been {client.info.last_number+1}, "
@@ -159,7 +159,7 @@ async def on_message(msg: discord.Message):
         client.info.last_number = 0
         client.info.last_guesser_id = 0
     else:
-        sys.stderr.write(f"[{time.time().__floor__()}]: submission '{potential_number} ({int(potential_number)})' succeeded")
+        sys.stdout.write(f"[{time.time().__floor__()}]: submission '{potential_number} ({int(potential_number)})' succeeded")
         await msg.add_reaction("✅")
         client.info.last_number += 1
         if client.info.last_number > client.info.highest_number:
