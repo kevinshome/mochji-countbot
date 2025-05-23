@@ -198,7 +198,7 @@ async def revive(ctx: discord.ApplicationContext):
         "last_guesser_id": 0
     }
     client.info.token_info["token_count"] -= 1
-    client.info.token_info["cooldown_end"] = client.info.last_number + 50
+    client.info.token_info["cooldown_end"] = client.info.last_number + 25
     client.info.save_to_disk()
 
     await ctx.respond("You have successfully used a revive token!\n\n"
