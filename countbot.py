@@ -140,6 +140,8 @@ async def on_message(msg: discord.Message):
             continue
         break
 
+    revive_available = client.info.last_number == 0 and client.info.last_round_info["last_number"] >= client.info.token_info["cooldown_end"] and client.info.token_info["token_count"] > 0
+
     client.info.lock = True
     if potential_number != client.info.last_number+1:
         sys.stdout.write(f"[{time.time().__floor__()}]: submission '{potential_number} ({int(potential_number)})' failed")
@@ -149,6 +151,7 @@ async def on_message(msg: discord.Message):
                 f"not {potential_number}!\n\n"
                 f"{msg.author.mention} is now a {baka_role.mention}\n\n"
                 f"(You have {client.info.token_info['token_count']} revive tokens available)"
+                "\n\nYou can use `/revive` to revive this session" if revive_available else ""
         )
         await msg.author.add_roles(baka_role)
         client.info.last_round_info = {
